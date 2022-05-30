@@ -13,7 +13,7 @@ from numpy import array
 from numpy import linalg as LA
 from numpy import all as All
 from numpy import inf
-from ros_autonomous_slam.functions import robot,informationGain,discount
+from ros_autonomous_slam_py.functions import robot,informationGain,discount
 from numpy.linalg import norm
 
 # Subscribers' callbacks------------------------------

@@ -9,8 +9,8 @@ from nav_msgs.msg import OccupancyGrid
 from geometry_msgs.msg import PointStamped
 import tf2_ros
 from numpy import array, vstack, delete
-from ros_autonomous_slam.functions import gridValue, informationGain
-from sklearn.cluster import MeanShift
+from ros_autonomous_slam_py.functions import gridValue, informationGain
+from scikit.cluster import MeanShift
 from ros_autonomous_slam.msg import PointArray
 
 # Subscribers' callbacks------------------------------

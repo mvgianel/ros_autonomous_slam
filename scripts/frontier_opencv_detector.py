@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 
 #--------Include modules---------------
@@ -6,7 +6,7 @@ import rclpy
 from visualization_msgs.msg import Marker
 from nav_msgs.msg import OccupancyGrid
 from geometry_msgs.msg import PointStamped
-from ros_autonomous_slam.getfrontier import getfrontier
+from ros_autonomous_slam_py.getfrontier import getfrontier
 
 #-----------------------------------------------------
 # Subscribers' callbacks------------------------------
@@ -16,7 +16,7 @@ mapData=OccupancyGrid()
 def mapCallBack(data):
     global mapData
     mapData=data
-    
+
 
     
 
