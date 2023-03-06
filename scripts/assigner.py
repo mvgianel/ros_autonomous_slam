@@ -1,19 +1,19 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #--------Include modules---------------
 from copy import copy
-import rospy
+import rclpy
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Point
 from nav_msgs.msg import OccupancyGrid
-import tf
+import tf2_ros
 from ros_autonomous_slam.msg import PointArray
 from time import time
 from numpy import array
 from numpy import linalg as LA
 from numpy import all as All
 from numpy import inf
-from functions import robot,informationGain,discount
+from ros_autonomous_slam_py.functions import robot,informationGain,discount
 from numpy.linalg import norm
 
 # Subscribers' callbacks------------------------------
@@ -36,25 +36,27 @@ def mapCallBack(data):
 
 def node():
 	global frontiers,mapData,global1,global2,global3,globalmaps
-	rospy.init_node('assigner', anonymous=False)
+	rclpy.init()
+	node = rclpy.create_node('assigner')
 	
 	# fetching all parameters
-	map_topic= rospy.get_param('~map_topic','map')
-	info_radius= rospy.get_param('~info_radius',1.0)					#this can be smaller than the laser scanner range, >> smaller >>less computation time>> too small is not good, info gain won't be accurate
-	info_multiplier=rospy.get_param('~info_multiplier',3.0)		
-	hysteresis_radius=rospy.get_param('~hysteresis_radius',3.0)			#at least as much as the laser scanner range
-	hysteresis_gain=rospy.get_param('~hysteresis_gain',2.0)				#bigger than 1 (biase robot to continue exploring current region
-	frontiers_topic= rospy.get_param('~frontiers_topic','/filtered_points')	
-	n_robots = rospy.get_param('~n_robots',1)
-	namespace = rospy.get_param('~namespace','')
-	namespace_init_count = rospy.get_param('namespace_init_count',1)
-	delay_after_assignement=rospy.get_param('~delay_after_assignement',0.5)
-	rateHz = rospy.get_param('~rate',100)
+	map_topic= node.declare_parameter('_map_topic','map').value
+	info_radius= node.declare_parameter('_info_radius',1.0).value			#this can be smaller than the laser scanner range, >> smaller >>less computation time>> too small is not good, info gain won't be accurate
+	info_multiplier=node.declare_parameter('_info_multiplier',3.0).value		
+	hysteresis_radius=node.declare_parameter('_hysteresis_radius',3.0).value			#at least as much as the laser scanner range
+	hysteresis_gain=node.declare_parameter('_hysteresis_gain',2.0).value				#bigger than 1 (biase robot to continue exploring current region
+	frontiers_topic= node.declare_parameter('_frontiers_topic','/filtered_points').value	
+	n_robots = node.declare_parameter('_n_robots',1).value
+	namespace = node.declare_parameter('_namespace','husky').value
+	namespace_init_count = node.declare_parameter('_namespace_init_count',1).value
+	delay_after_assignement=node.declare_parameter('_delay_after_assignement',0.5).value
+	rateHz = node.declare_parameter('_rate',100).value
 	
-	rate = rospy.Rate(rateHz)
+	rate = node.create_rate(rateHz)
 #-------------------------------------------
-	rospy.Subscriber(map_topic, OccupancyGrid, mapCallBack)
-	rospy.Subscriber(frontiers_topic, PointArray, callBack)
+	depth = 10
+	node.create_subscription(OccupancyGrid, map_topic, mapCallBack, depth)
+	node.create_subscription(PointArray, frontiers_topic, callBack, depth)
 #---------------------------------------------------------------------------------------------------------------
 		
 # wait if no frontier is received yet 
@@ -75,7 +77,7 @@ def node():
 #-------------------------------------------------------------------------
 #---------------------     Main   Loop     -------------------------------
 #-------------------------------------------------------------------------
-	while not rospy.is_shutdown():	
+	while rclpy.ok():	
 		centroids=copy(frontiers)
 
 #-------------------------------------------------------------------------			
@@ -92,7 +94,7 @@ def node():
 				nb.append(i)
 			else:
 				na.append(i)	
-		rospy.loginfo("available robots: "+str(na))	
+		node.get_logger().info("available robots: "+str(na))	
 #------------------------------------------------------------------------- 
 #get dicount and update informationGain
 		for i in nb+na:
@@ -135,16 +137,16 @@ def node():
 					centroid_record.append(centroids[ip])
 					id_record.append(ir)
 		
-		rospy.loginfo("revenue record: "+str(revenue_record))	
-		rospy.loginfo("centroid record: "+str(centroid_record))	
-		rospy.loginfo("robot IDs record: "+str(id_record))	
+		node.get_logger().info("revenue record: "+str(revenue_record))	
+		node.get_logger().info("centroid record: "+str(centroid_record))	
+		node.get_logger().info("robot IDs record: "+str(id_record))	
 		
 #-------------------------------------------------------------------------	
 		if (len(id_record)>0):
 			winner_id=revenue_record.index(max(revenue_record))
 			robots[id_record[winner_id]].sendGoal(centroid_record[winner_id])
-			rospy.loginfo(namespace+str(namespace_init_count+id_record[winner_id])+"  assigned to  "+str(centroid_record[winner_id]))	
-			rospy.sleep(delay_after_assignement)
+			node.get_logger().info(namespace+str(namespace_init_count+id_record[winner_id])+"  assigned to  "+str(centroid_record[winner_id]))	
+			rate.sleep(delay_after_assignement)
 #------------------------------------------------------------------------- 
 		rate.sleep()
 #-------------------------------------------------------------------------
@@ -152,9 +154,6 @@ def node():
 if __name__ == '__main__':
     try:
         node()
-    except rospy.ROSInterruptException:
+    except KeyboardInterrupt:
         pass
- 
- 
- 
  
